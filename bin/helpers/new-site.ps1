@@ -40,10 +40,10 @@ echo "CREATE DATABASE \`$DBName\`;" | mysql -u root
 # WP-CLI Install
 cd $DestPath
 wp config create --dbname=$DBName --dbuser=root --dbpass="" --allow-root
-wp core install --url="http://localhost:8080/$SiteSlug" --title="$SiteName" --admin_user="admin" --admin_password="password" --admin_email="admin@localhost.local" --skip-email --allow-root
+wp core install --url="http://localhost:8888/$SiteSlug" --title="$SiteName" --admin_user="admin" --admin_password="password" --admin_email="admin@localhost.local" --skip-email --allow-root
 
 # Force ABSPATH fix for your specific stack architecture
 (Get-Content wp-config.php) -replace "if \( ! defined\( 'ABSPATH' \) \)", "" -replace "define\( 'ABSPATH', __DIR__ . '/' \);", "define( 'ABSPATH', __DIR__ . '/' );" | Set-Content wp-config.php
 
-Write-Host ">>> SUCCESS! Live at http://localhost:8080/$SiteSlug" -ForegroundColor Green
-Start-Process "http://localhost:8080/$SiteSlug/wp-admin"
+Write-Host ">>> SUCCESS! Live at http://localhost:8888/$SiteSlug" -ForegroundColor Green
+Start-Process "http://localhost:8888/$SiteSlug/wp-admin"

@@ -11,7 +11,7 @@ switch ($Action) {
     "up" {
         Write-Host ">>> FlowStack: Starting Services" -ForegroundColor Cyan
 
-        # This creates a 'tunnel' so localhost:8080/htdocs points to your actual sites
+        # This creates a 'tunnel' so localhost:8888/htdocs points to your actual sites
         $HtdocsLink = Join-Path $AppRoot "core\dashboard\htdocs"
         $ActualHtdocs = Join-Path $PersistDir "htdocs"
 
@@ -23,10 +23,15 @@ switch ($Action) {
 
         # Start MariaDB & PHP
         Start-Process mysqld -ArgumentList "--console" -NoNewWindow
-        Start-Process php -ArgumentList "-S localhost:8080 -t `"$AppRoot\core\dashboard`"" -NoNewWindow
+        Start-Process php -ArgumentList "-S localhost:8888 -t `"$AppRoot\core\dashboard`"" -NoNewWindow
 
         Write-Host ">>> Stack is UP!" -ForegroundColor Green
-        Start-Process "http://localhost:8080"
+        Start-Process "http://localhost:8888"
+    }
+
+    "down" {
+        Stop-Process -Name php -ErrorAction SilentlyContinue
+        Stop-Process -Name mysqld -ErrorAction SilentlyContinue
     }
 
     "new" {
@@ -38,33 +43,31 @@ switch ($Action) {
         $PmaPath = Join-Path $AppRoot "core\dashboard\phpmyadmin"
 
         if (!(Test-Path $PmaPath)) {
-            Write-Host ">>> phpMyAdmin not found. Installing..." -ForegroundColor Yellow
+            Write-Host ">>> phpMyAdmin not found. Downloading..." -ForegroundColor Yellow
+            $ZipPath = Join-Path $env:TEMP "pma.zip"
+            # Direct link to the latest stable version
+            Invoke-WebRequest -Uri "https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip" -OutFile $ZipPath
 
-            # 1. Download latest PMA
-            $ZipPath = Join-Path $env:TEMP "pma-latest.zip"
-            $DownloadUrl = "https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip"
-            Invoke-WebRequest -Uri $DownloadUrl -OutFile $ZipPath
-
-            # 2. Extract
             Write-Host ">>> Extracting..." -ForegroundColor Gray
-            Expand-Archive -Path $ZipPath -DestinationPath (Join-Path $env:TEMP "pma-temp") -Force
+            Expand-Archive -Path $ZipPath -DestinationPath "$env:TEMP\pma_temp" -Force
 
-            # 3. Move and Cleanup (PMA zip has a versioned subfolder)
-            $ExtractedFolder = Get-ChildItem (Join-Path $env:TEMP "pma-temp") | Select-Object -First 1
+            # PMA zip contains a subfolder like "phpMyAdmin-5.2.1-all-languages"
+            $ExtractedFolder = Get-ChildItem "$env:TEMP\pma_temp" | Select-Object -First 1
             Move-Item -Path $ExtractedFolder.FullName -Destination $PmaPath
 
-            # 4. Inject your custom config template
-            $TemplateConfig = Join-Path $AppRoot "core\templates\pma-config.php"
-            $DestConfig = Join-Path $PmaPath "config.inc.php"
-            Copy-Item $TemplateConfig -Destination $DestConfig -Force
+            # Inject your template config
+            $Template = Join-Path $AppRoot "core\templates\pma-config.php"
+            if (Test-Path $Template) {
+                Copy-Item $Template -Destination (Join-Path $PmaPath "config.inc.php") -Force
+            }
 
+            # Cleanup
             Remove-Item $ZipPath
-            Remove-Item (Join-Path $env:TEMP "pma-temp") -Recurse
-            Write-Host ">>> phpMyAdmin installed successfully!" -ForegroundColor Green
+            Remove-Item "$env:TEMP\pma_temp" -Recurse
+            Write-Host ">>> phpMyAdmin installed!" -ForegroundColor Green
         }
 
-        Write-Host "Opening phpMyAdmin..." -ForegroundColor Cyan
-        Start-Process "http://localhost:8080/phpmyadmin"
+        Start-Process "http://localhost:8888/phpmyadmin/index.php"
     }
 
     Default {
