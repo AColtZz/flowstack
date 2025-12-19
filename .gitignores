@@ -1,0 +1,31 @@
+# --- IDEs & Editors ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- System / OS Files ---
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# --- PHP & Composer ---
+# Ignore the vendor folder unless it's part of your core dashboard logic
+/vendor/
+composer.phar
+.phpunit.result.cache
+
+# --- FlowStack Specifics (Crucial) ---
+# Don't commit your local site configurations or secrets
+stack-config.json
+auth.json
+*.log
+
+# --- Local Data ---
+# If you keep your htdocs inside the repo folder for now,
+# ignore the actual sites so your repo stays clean.
+/htdocs/*
+!/htdocs/.gitkeep
+
+# MariaDB data if stored locally
+/data/
