@@ -1,52 +1,63 @@
 param([string]$Action)
 
-# 1. Path Discovery
+# --- Configuration & Versioning ---
+$StackPort = "8888"
+$PmaVersion = "5.2.3" # Specify your exact version here
+$ProgressPreference = 'SilentlyContinue'
+
+# --- Path Discovery ---
 $PSScriptPath = Split-Path $MyInvocation.MyCommand.Path
 $AppRoot = Split-Path $PSScriptPath -Parent
 $PersistDir = Join-Path (Split-Path $AppRoot -Parent) "persist\flowstack"
 
-# Helper Function for PMA (so we can call it from anywhere)
+# Helper Function for PMA
 function Ensure-PMA {
-    $DashboardPath = Join-Path $AppRoot "core\dashboard"
-    $PmaJunction = Join-Path $DashboardPath "phpmyadmin"
+    $PmaFolder = Join-Path $AppRoot "core\dashboard\phpmyadmin"
 
-    if (!(Test-Path $PmaJunction)) {
-        Write-Host ">>> phpMyAdmin not found. Installing..." -ForegroundColor Yellow
-        $ZipPath = Join-Path $env:TEMP "pma_latest.zip"
-        $TempExtract = Join-Path $env:TEMP "pma_extract"
+    if (!(Test-Path $PmaFolder)) {
+        Write-Host ">>> phpMyAdmin $PmaVersion not found. Installing..." -ForegroundColor Yellow
 
-        Invoke-WebRequest -Uri "https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip" -OutFile $ZipPath
-        Expand-Archive -Path $ZipPath -DestinationPath $TempExtract -Force
+        $Url = "https://files.phpmyadmin.net/phpMyAdmin/$PmaVersion/phpMyAdmin-$PmaVersion-all-languages.zip"
+        $ZipPath = Join-Path $env:TEMP "pma_$PmaVersion.zip"
+        $TempExtract = Join-Path $env:TEMP "pma_temp_extract"
 
+        # 1. Download
+        Invoke-WebRequest -Uri $Url -OutFile $ZipPath
+
+        # 2. Fast Extraction using .NET
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        if (Test-Path $TempExtract) { Remove-Item $TempExtract -Recurse -Force }
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($ZipPath, $TempExtract)
+
+        # 3. Move and Rename to exactly 'phpmyadmin'
         $ExtractedFolder = Get-ChildItem $TempExtract | Select-Object -First 1
-        $DestinationPath = Join-Path $DashboardPath $ExtractedFolder.Name
+        Move-Item -Path $ExtractedFolder.FullName -Destination $PmaFolder
 
-        if (!(Test-Path $DestinationPath)) { Move-Item -Path $ExtractedFolder.FullName -Destination $DestinationPath }
-        New-Item -ItemType Junction -Path $PmaJunction -Target $DestinationPath -Force | Out-Null
-
+        # 4. Inject Config
         $Template = Join-Path $AppRoot "core\templates\pma-config.php"
-        if (Test-Path $Template) { Copy-Item $Template -Destination (Join-Path $PmaJunction "config.inc.php") -Force }
+        if (Test-Path $Template) {
+            Copy-Item $Template -Destination (Join-Path $PmaFolder "config.inc.php") -Force
+        }
 
+        # Cleanup
         Remove-Item $ZipPath -ErrorAction SilentlyContinue
         Remove-Item $TempExtract -Recurse -ErrorAction SilentlyContinue
-        Write-Host ">>> phpMyAdmin Ready!" -ForegroundColor Green
+        Write-Host ">>> phpMyAdmin $PmaVersion Ready!" -ForegroundColor Green
     }
 }
 
-# 2. Command Router
+# --- Command Router ---
 switch ($Action) {
     "up" {
         Write-Host ">>> FlowStack: Initializing..." -ForegroundColor Cyan
-
-        # Ensure PMA is ready before starting
         Ensure-PMA
 
-        # Setup Paths & Config
+        # Setup Paths
         $PhpDir = Split-Path (Get-Command php).Source
         $ExtDir = Join-Path $PhpDir "ext"
         $CustomIni = Join-Path $AppRoot "core\templates\php-stack.ini"
 
-        # Junction for htdocs
+        # Junction for htdocs (Keep this, as it points to your Persist folder)
         $HtdocsLink = Join-Path $AppRoot "core\dashboard\htdocs"
         $ActualHtdocs = Join-Path $PersistDir "htdocs"
         if (!(Test-Path $ActualHtdocs)) { New-Item -ItemType Directory -Path $ActualHtdocs -Force | Out-Null }
@@ -56,22 +67,22 @@ switch ($Action) {
         Write-Host ">>> Starting MariaDB & PHP Server..." -ForegroundColor Gray
         Start-Process mysqld -ArgumentList "--console" -WindowStyle Hidden
 
-        $PhpArgs = @("-S", "localhost:8888", "-t", "`"$AppRoot\core\dashboard`"", "-c", "`"$CustomIni`"", "-d", "extension_dir=`"$ExtDir`"")
+        $PhpArgs = @("-S", "localhost:$StackPort", "-t", "`"$AppRoot\core\dashboard`"", "-c", "`"$CustomIni`"", "-d", "extension_dir=`"$ExtDir`"")
         Start-Process php -ArgumentList $PhpArgs -WindowStyle Hidden
 
-        Write-Host ">>> FlowStack is UP at http://localhost:8888" -ForegroundColor Green
-        Start-Process "http://localhost:8888"
+        Write-Host ">>> FlowStack is UP at http://localhost:$StackPort" -ForegroundColor Green
+        Start-Process "http://localhost:$StackPort"
     }
 
     "down" {
-        Write-Host ">>> FlowStack: Shutting down services..." -ForegroundColor Red
-        # Kill by name, but we also search for the specific processes to be sure
+        Write-Host ">>> FlowStack: Shutting down..." -ForegroundColor Red
         Get-Process php, mysqld -ErrorAction SilentlyContinue | Stop-Process -Force
         Write-Host ">>> All services stopped." -ForegroundColor Gray
     }
 
     "new" {
-        & "$PSScriptPath\helpers\new-site.ps1"
+        # Pass the port to the helper script if needed
+        & "$PSScriptPath\helpers\new-site.ps1" -Port $StackPort
     }
 
     Default {
