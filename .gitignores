@@ -27,5 +27,25 @@ auth.json
 /htdocs/*
 !/htdocs/.gitkeep
 
+# --- phpmyadmin ---
+# Get's pulled automatically using commands
+# Ignore the junction link
+/core/dashboard/phpmyadmin
+
+# Ignore the phpMyAdmin junction/link
+/core/dashboard/phpmyadmin
+/core/dashboard/phpmyadmin/
+
+# Ignore any versioned PMA folders (e.g., phpMyAdmin-5.2.1-all-languages)
+# We use case-insensitive patterns to be safe
+/[Cc][Oo][Rr][Ee]/[Dd][Aa][Ss][Hh][Bb][Oo][Aa][Rr][Dd]/[Pp][Hh][Pp][Mm][Yy][Aa][Dd][Mm][Ii][Nn]-*/
+
+# Alternative simpler catch-all if the above feels like overkill:
+**/phpMyAdmin-*/
+**/phpmyadmin/
+
+# Ignore temporary zips or source zips if you store them there
+/core/source/*.zip
+
 # MariaDB data if stored locally
 /data/

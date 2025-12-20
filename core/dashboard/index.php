@@ -19,10 +19,11 @@ $website_count = count($websites);
 $page = $_GET['page'] ?? 'overview';
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="en_US">
 <head>
-    <title>Dashboard</title>
-    <link rel="stylesheet" type="text/css" href="/style.css">
+    <title>FlowStack</title>
+    <link rel="stylesheet" type="text/css" href="/style.css" class="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" class="stylesheet">
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -31,16 +32,17 @@ $page = $_GET['page'] ?? 'overview';
         <div class="sidebar__logo"><span class="dot"></span><span>Dashboard</span></div>
         <nav class="sidebar__nav">
             <a href="?page=overview" class="nav-item <?= $page == 'overview' ? 'nav-item--active' : '' ?>">
-                <span class="icon">📊</span><span>Overview</span>
+                <i class="fa-solid fa-house"></i><span>Overview</span>
             </a>
             <a href="?page=websites" class="nav-item <?= $page == 'websites' ? 'nav-item--active' : '' ?>">
-                <span class="icon">📁</span><span>Websites</span>
+                <i class="fa-solid fa-globe"></i><span>Websites</span>
             </a>
+            <!--suppress HtmlUnknownTarget -->
             <a href="/phpmyadmin/index.php" target="_blank" class="nav-item">
-                <span class="icon">🛢️</span><span>phpMyAdmin</span>
+                <i class="fa-solid fa-database"></i><span>phpMyAdmin</span>
             </a>
             <a href="?page=phpinfo" class="nav-item <?= $page == 'phpinfo' ? 'nav-item--active' : '' ?>">
-                <span class="icon">ℹ️</span><span>PHP Info</span>
+                <i class="fa-solid fa-circle-info"></i><span>PHP Info</span>
             </a>
         </nav>
     </aside>
@@ -71,8 +73,8 @@ $page = $_GET['page'] ?? 'overview';
                     </article>
                     <article class="card">
                         <span class="card__label">Server Status</span>
-                        <p class="card__value">Online</p>
-                        <p class="card__hint">Port 8080 Active</p>
+                        <p class="card__value dot"><span class="dot"></span> Online</p>
+                        <p class="card__hint">Running on port :<?= $_SERVER['SERVER_PORT']; ?></p>
                     </article>
                 </div>
             <?php elseif ($page == 'websites'): ?>
@@ -89,55 +91,6 @@ $page = $_GET['page'] ?? 'overview';
                     </div>
                 </div>
             <?php elseif ($page == 'phpinfo'): ?>
-                <style>
-					/* Scoped styles for the phpinfo panel */
-					.phpinfo-container {
-						font-size: 0.8rem;
-						color: var(--text-main);
-					}
-
-					.phpinfo-container table {
-						width: 100%;
-						border-collapse: collapse;
-						margin-bottom: 20px;
-						table-layout: fixed;
-						word-wrap: break-word;
-					}
-
-					.phpinfo-container th, .phpinfo-container td {
-						border: 1px solid var(--border-subtle);
-						padding: 8px;
-						text-align: left;
-					}
-
-					.phpinfo-container th {
-						background: rgba(110, 242, 255, 0.1);
-						color: var(--accent);
-					}
-
-					.phpinfo-container .e {
-						background: rgba(255, 255, 255, 0.03);
-						width: 300px;
-						font-weight: 600;
-					}
-
-					/* Key column */
-					.phpinfo-container .v {
-						color: var(--text-muted);
-						overflow-x: auto;
-					}
-
-					/* Value column */
-					.phpinfo-container h1, .phpinfo-container h2 {
-						color: var(--accent-alt);
-					}
-
-					.phpinfo-container img {
-						float: right;
-						border: 0;
-					}
-                </style>
-
                 <div class="panel phpinfo-container" style="overflow:auto; height: 85vh;">
                     <?php
                     ob_start();
