@@ -1,28 +1,25 @@
-param([string]$Action, [string]$Value)
+param([string]$Action)
 
 $StackPort = "8888"
-$PSScriptPath = Split-Path $MyInvocation.MyCommand.Path
-$AppRoot = Split-Path $PSScriptPath -Parent
+# AppRoot is the folder where FlowStack is installed (e.g., .../scoop/apps/flowstack/current)
+$AppRoot = Split-Path $PSScriptRoot -Parent
 
-# Auto-locate Scoop Persist
-$ScoopRoot = $PSScriptPath
-for ($i=0; $i -lt 4; $i++) { $ScoopRoot = Split-Path $ScoopRoot -Parent }
-$UserHtdocs = Join-Path $ScoopRoot "persist\flowstack\htdocs"
+# Dynamic Scoop Path Detection for the Help Menu
+$ScoopRoot = if ($env:SCOOP) { $env:SCOOP } else { "$HOME\scoop" }
+$PersistHtdocs = "$ScoopRoot\persist\flowstack\htdocs"
 
 switch ($Action) {
     "up" {
         Write-Host ">>> FlowStack: Starting Services..." -ForegroundColor Cyan
 
-        # Junction link to Persist
-        $DashboardHtdocs = Join-Path $AppRoot "core\dashboard\htdocs"
-        if (Test-Path $DashboardHtdocs) { Remove-Item $DashboardHtdocs -Recurse -Force }
-        New-Item -ItemType Junction -Path $DashboardHtdocs -Target $UserHtdocs | Out-Null
-
-        # Start PHP & MySQL
-        $PhpDir = Split-Path (Get-Command php).Source
         $CustomIni = Join-Path $AppRoot "core\templates\php-stack.ini"
 
+        # 1. Start MariaDB (mysqld)
+        # Using --console to keep it lightweight; WindowStyle Hidden keeps it out of your taskbar
         Start-Process mysqld -ArgumentList "--console" -WindowStyle Hidden
+
+        # 2. Start PHP Dashboard
+        # -S: Local server | -t: Document Root | -c: Custom php.ini
         Start-Process php -ArgumentList "-S", "localhost:$StackPort", "-t", "`"$AppRoot\core\dashboard`"", "-c", "`"$CustomIni`"" -WindowStyle Hidden
 
         Write-Host ">>> FlowStack is LIVE at http://localhost:$StackPort" -ForegroundColor Green
@@ -30,15 +27,29 @@ switch ($Action) {
     }
 
     "down" {
-        Get-Process php, mysqld -ErrorAction SilentlyContinue | Stop-Process -Force
-        Write-Host ">>> Services stopped." -ForegroundColor Red
+        Write-Host ">>> FlowStack: Stopping Services..." -ForegroundColor Yellow
+        # Force stop the processes; SilentlyContinue prevents errors if they aren't running
+        Stop-Process -Name php, mysqld -Force -ErrorAction SilentlyContinue
+        Write-Host ">>> Services Stopped." -ForegroundColor Gray
     }
 
     "new" {
-        & "$PSScriptPath\helpers\new-site.ps1" -InstallPath $UserHtdocs
+        # Runs your WordPress site creator helper script
+        & "$PSScriptRoot\helpers\new-site.ps1"
     }
 
     Default {
-        Write-Host "Usage: flow [up | down | new]" -ForegroundColor White
+        Write-Host ""
+        Write-Host "  FlowStack CLI v1.0.0" -ForegroundColor Cyan
+        Write-Host "  --------------------"
+        Write-Host "  up      : Start MariaDB, PHP Dashboard, and open browser."
+        Write-Host "  down    : Kill all running PHP and MySQL processes."
+        Write-Host "  new     : Launch the WordPress Site Creator wizard."
+        Write-Host ""
+        Write-Host "  Your websites are stored in:" -ForegroundColor White
+        Write-Host "  $PersistHtdocs" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "  Tip: Use 'flowstack up' to get started." -ForegroundColor DarkGray
+        Write-Host ""
     }
 }
