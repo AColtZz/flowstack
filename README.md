@@ -6,16 +6,12 @@ It provides a lightweight PHP + MariaDB environment with a PowerShell-based CLI 
 Status: WIP / Experimental
 Scope: Personal use only
 
----
-
 ## Project Status
 
 - Contributions are not accepted
 - The Scoop bucket is private and intended for personal use
 - Interfaces, structure, and behavior may change without notice
 - No stability or backward-compatibility guarantees are provided
-
----
 
 ## Features
 
@@ -25,8 +21,6 @@ Scope: Personal use only
 - Local dashboard
 - WordPress site creation helper
 - Scoop-compatible layout with persistence support
-
----
 
 ## Usage
 
@@ -80,8 +74,6 @@ flowstack
 ```
 </details>
 
----
-
 ## Paths & Persistence
 
 Application root (managed by Scoop): ```scoop/apps/flowstack/current```
@@ -90,21 +82,15 @@ Persistent web projects directory: ```scoop/persist/flowstack/htdocs```
 
 All websites are stored in the persistent directory to survive updates.
 
----
-
 ## Configuration
 
 Default dashboard port: ```http://localhost:8888```
 
 Custom PHP configuration file: ```core/templates/php-stack.ini```
 
----
-
 ## License
 
 MIT License
-
----
 
 ## Disclaimer
 
