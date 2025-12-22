@@ -1,7 +1,6 @@
 # bin/helpers/install-pma.ps1
 $PmaVersion = "5.2.3"
 $PSScriptPath = Split-Path $MyInvocation.MyCommand.Path
-# Points to the root of the extracted flowstack-main folder
 $AppRoot = Split-Path (Split-Path $PSScriptPath -Parent) -Parent
 $PmaFolder = Join-Path $AppRoot "core\dashboard\phpmyadmin"
 
@@ -11,20 +10,24 @@ if (!(Test-Path $DashboardPath)) {
     New-Item -ItemType Directory -Path $DashboardPath -Force | Out-Null
 }
 
-if (!(Test-Path $PmaFolder)) {
-    Write-Host ">>> Downloading phpMyAdmin $PmaVersion..." -ForegroundColor Cyan
+# IMPORTANT: Check if index.php exists.
+# Because Scoop creates a "Junction" folder, Test-Path $PmaFolder will ALWAYS be true.
+if (!(Test-Path (Join-Path $PmaFolder "index.php"))) {
+    Write-Host ">>> phpMyAdmin not found in persistent storage. Installing..." -ForegroundColor Cyan
+
     $Url = "https://files.phpmyadmin.net/phpMyAdmin/$PmaVersion/phpMyAdmin-$PmaVersion-all-languages.zip"
     $ZipPath = Join-Path $env:TEMP "pma_$PmaVersion.zip"
     $TempExtract = Join-Path $env:TEMP "pma_temp_extract"
 
     Invoke-WebRequest -Uri $Url -OutFile $ZipPath
 
-    # Modern PowerShell way to extract
     if (Test-Path $TempExtract) { Remove-Item $TempExtract -Recurse -Force }
     Expand-Archive -Path $ZipPath -DestinationPath $TempExtract -Force
 
     $ExtractedFolder = Get-ChildItem $TempExtract | Select-Object -First 1
-    Move-Item -Path $ExtractedFolder.FullName -Destination $PmaFolder
+
+    # Move files INTO the junctioned folder
+    Copy-Item -Path "$($ExtractedFolder.FullName)\*" -Destination $PmaFolder -Recurse -Force
 
     # Config Template
     $Template = Join-Path $AppRoot "core\templates\pma-config.php"
@@ -35,5 +38,7 @@ if (!(Test-Path $PmaFolder)) {
 
     Remove-Item $ZipPath -Force
     Remove-Item $TempExtract -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host ">>> phpMyAdmin installed successfully in core\dashboard." -ForegroundColor Green
+    Write-Host ">>> phpMyAdmin installed successfully!" -ForegroundColor Green
+} else {
+    Write-Host ">>> phpMyAdmin is already present in persistent storage." -ForegroundColor Gray
 }

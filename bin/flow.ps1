@@ -12,15 +12,20 @@ switch ($Action) {
     "up" {
         Write-Host ">>> FlowStack: Starting Services..." -ForegroundColor Cyan
 
-        $CustomIni = Join-Path $AppRoot "core\templates\php-stack.ini"
+        # Define where the data should live (in the persist folder)
+        $PersistData = Join-Path (Split-Path $AppRoot -Parent) "persist\flowstack\data"
 
-        # 1. Start MariaDB (mysqld)
-        # Using --console to keep it lightweight; WindowStyle Hidden keeps it out of your taskbar
-        Start-Process mysqld -ArgumentList "--console" -WindowStyle Hidden
+        # Ensure the directory exists so MariaDB doesn't complain
+        if (!(Test-Path $PersistData)) { New-Item -ItemType Directory -Path $PersistData -Force | Out-Null }
 
-        # 2. Start PHP Dashboard
-        # -S: Local server | -t: Document Root | -c: Custom php.ini
-        Start-Process php -ArgumentList "-S", "localhost:$StackPort", "-t", "`"$AppRoot\core\dashboard`"", "-c", "`"$CustomIni`"" -WindowStyle Hidden
+        # 1. Start MariaDB and tell it exactly where to save the databases
+        # --datadir points to the persist folder so your DBs survive updates
+        Start-Process mysqld -ArgumentList "--datadir=`"$PersistData`"", "--console" -WindowStyle Hidden
+
+        # 2. Start PHP with the Router
+        $PhpIni = Join-Path $AppRoot "core\templates\php-stack.ini"
+        $Router = Join-Path $AppRoot "core\dashboard\router.php"
+        Start-Process php -ArgumentList "-S", "localhost:$StackPort", "-t", "`"$AppRoot\core\dashboard`"", "-c", "`"$PhpIni`"", "`"$Router`"" -WindowStyle Hidden
 
         Write-Host ">>> FlowStack is LIVE at http://localhost:$StackPort" -ForegroundColor Green
         Start-Process "http://localhost:$StackPort"
