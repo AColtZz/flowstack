@@ -12,15 +12,8 @@ switch ($Action) {
     "up" {
         Write-Host ">>> FlowStack: Starting Services..." -ForegroundColor Cyan
 
-        # Define where the data should live (in the persist folder)
-        $PersistData = Join-Path (Split-Path $AppRoot -Parent) "persist\flowstack\data"
-
-        # Ensure the directory exists so MariaDB doesn't complain
-        if (!(Test-Path $PersistData)) { New-Item -ItemType Directory -Path $PersistData -Force | Out-Null }
-
-        # 1. Start MariaDB and tell it exactly where to save the databases
-        # --datadir points to the persist folder so your DBs survive updates
-        Start-Process mysqld -ArgumentList "--datadir=`"$PersistData`"", "--console" -WindowStyle Hidden
+        # 1. Start MariaDB (Removed the forced --datadir to persist)
+        Start-Process mysqld -ArgumentList "--console" -WindowStyle Hidden
 
         # 2. Start PHP with the Router
         $PhpIni = Join-Path $AppRoot "core\templates\php-stack.ini"
