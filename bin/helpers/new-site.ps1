@@ -39,13 +39,29 @@ New-Item -ItemType Directory -Path $DestPath -Force | Out-Null
 Copy-Item "$MasterCore\*" -Destination $DestPath -Recurse
 
 # --- 5. WP-CLI SETUP ---
+# Save where you are right now
+$OriginalLocation = Get-Location
+
 Set-Location $DestPath
 Write-Host ">>> Configuring Database: $DbName..." -ForegroundColor Gray
 
-# Create Database first (WP-CLI can do this!)
+# Define the path to your ini (consistent with flow.ps1)
+$PhpIni = Join-Path $AppRoot "core\templates\php-stack.ini"
+
+# Tell WP-CLI to use your specific PHP config for these commands
+$env:PHPRC = $PhpIni
+
+# 1. Create Database
 wp db create --allow-root
 
+# 2. Create Config
 wp config create --dbname=$DbName --dbuser=root --dbpass="" --allow-root
+
+# 3. Install WordPress
 wp core install --url="http://localhost:8888/$SiteSlug" --title="$SiteName" --admin_user="admin" --admin_password="password" --admin_email="admin@localhost.local" --skip-email --allow-root
+
+# Clean up env variable after we are done
+$env:PHPRC = ""
+Set-Location $OriginalLocation
 
 Write-Host ">>> Site Created! Access it at: http://localhost:8888/$SiteSlug" -ForegroundColor Green
