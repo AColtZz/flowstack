@@ -14,23 +14,3 @@ desktop.ini
 /vendor/
 composer.phar
 .phpunit.result.cache
-
-# --- FlowStack Specifics (Crucial) ---
-# Don't commit your local site configurations or secrets
-stack-config.json
-auth.json
-*.log
-
-# --- Local Data ---
-# If you keep your htdocs inside the repo folder for now,
-# ignore the actual sites so your repo stays clean.
-/htdocs/*
-!/htdocs/.gitkeep
-
-# --- phpmyadmin ---
-# Get's pulled automatically using commands
-# Ignore the junction link
-/core/dashboard/phpmyadmin
-
-# MariaDB data if stored locally
-/data/

@@ -15,7 +15,7 @@ $websites = array_map('basename', $websites);
 
 $website_count = count($websites);
 
-// Logic for current page
+// Logic for the current page
 $page = $_GET['page'] ?? 'overview';
 ?>
 <!DOCTYPE html>
@@ -95,11 +95,11 @@ $page = $_GET['page'] ?? 'overview';
                     <?php
                     ob_start();
                     phpinfo();
-                    $pinfo = ob_get_contents();
+                    $phpinfo = ob_get_contents();
                     ob_end_clean();
 
                     // We extract the body and echo it inside our styled container
-                    echo preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $pinfo);
+                    echo preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $phpinfo);
                     ?>
                 </div>
             <?php endif; ?>
