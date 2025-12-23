@@ -3,6 +3,7 @@ param([string]$Action)
 $StackPort = "8888"
 $AppRoot = Split-Path $PSScriptRoot -Parent
 $PersistHtdocs = Join-Path $AppRoot "core\dashboard\htdocs"
+$CurrentDir = Get-Location # Capture where the user is right now
 
 switch ($Action) {
     "up" {
@@ -36,8 +37,6 @@ switch ($Action) {
     }
 
     "new" {
-        $CurrentDir = Get-Location # Capture where the user is right now
-
         $PhpRunning = Get-Process php -ErrorAction SilentlyContinue
         $MysqlRunning = Get-Process mysqld -ErrorAction SilentlyContinue
 
@@ -73,18 +72,27 @@ switch ($Action) {
             Write-Host " Error: Path not found ($PersistHtdocs)" -ForegroundColor Red
         }
         Write-Host "----------------------------------------"
+
+        # Force return to the user's starting point
+        Set-Location $CurrentDir
     }
 
     "update-wp" {
         Write-Host ">>> FlowStack: Refreshing WordPress Master Source..." -ForegroundColor Cyan
         & "$PSScriptRoot\helpers\install-wp.ps1" -ForceUpdate
         Write-Host ">>> Master Source is now up to date." -ForegroundColor Green
+
+        # Force return to the user's starting point
+        Set-Location $CurrentDir
     }
 
     "rm" {
         # Inside the 'rm' case, $args[0] is the first word AFTER 'rm'
         $SiteName = $args[0]
         & "$PSScriptRoot\helpers\remove-site.ps1" $SiteName
+
+        # Force return to the user's starting point
+        Set-Location $CurrentDir
     }
 
     "wp" {
@@ -93,6 +101,9 @@ switch ($Action) {
         $wpArgs = $args | Select-Object -Skip 1
         & wp $wpArgs --allow-root
         $env:PHPRC = ""
+
+        # Force return to the user's starting point
+        Set-Location $CurrentDir
     }
 
     Default {
