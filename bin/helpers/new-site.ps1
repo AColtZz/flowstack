@@ -1,3 +1,6 @@
+# Set original location first things first.
+$OriginalLocation = Get-Location
+
 # --- 1. GET THE SOURCE ---
 # Call the installer and capture the path it returns
 $MasterCore = & "$PSScriptRoot\install-wp.ps1"
@@ -34,7 +37,6 @@ New-Item -ItemType Directory -Path $DestPath -Force | Out-Null
 Copy-Item "$MasterCore\*" -Destination $DestPath -Recurse
 
 # --- 5. WP-CLI SETUP ---
-$OriginalLocation = Get-Location
 Set-Location $DestPath
 $env:PHPRC = Join-Path $AppRoot "core\templates\php-stack.ini"
 
