@@ -45,9 +45,10 @@ wp config create --dbname=$DbName --dbuser=root --dbpass="" --dbcharset="utf8mb4
 # 2. Create Database (This might initially use the buggy MariaDB default)
 wp db create --allow-root
 
-# 3. FIX COLLATION (Force the database to general_ci before tables are made)
+# 3. FIX COLLATION
 Write-Host ">>> Forcing collation to utf8mb4_general_ci..." -ForegroundColor Gray
-wp db query "ALTER DATABASE \`$DbName\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;" --allow-root
+$Query = 'ALTER DATABASE `' + $DbName + '` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;'
+wp db query $Query --allow-root
 
 # 4. Install WordPress
 # Because the DB is now fixed, all tables created here will be correct.
