@@ -36,16 +36,20 @@ switch ($Action) {
     }
 
     "new" {
+        $CurrentDir = Get-Location # Capture where the user is right now
+
         $PhpRunning = Get-Process php -ErrorAction SilentlyContinue
         $MysqlRunning = Get-Process mysqld -ErrorAction SilentlyContinue
 
         if (!$PhpRunning -or !$MysqlRunning) {
             Write-Host ">>> Services not detected. Starting now..." -ForegroundColor Yellow
             & $PSCommandPath "up"
-            Write-Host ">>> Waiting for MariaDB to initialize..." -ForegroundColor Gray
             Start-Sleep -Seconds 4 # 4 seconds is safer for MariaDB to fully boot
         }
         & "$PSScriptRoot\helpers\new-site.ps1"
+
+        # Force return to the user's starting point
+        Set-Location $CurrentDir
     }
 
     "list" {

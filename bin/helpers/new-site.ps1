@@ -1,6 +1,3 @@
-# Set original location first things first.
-$OriginalLocation = Get-Location
-
 # --- 1. GET THE SOURCE ---
 # Call the installer and capture the path it returns
 $MasterCore = & "$PSScriptRoot\install-wp.ps1"
@@ -64,4 +61,3 @@ Write-Host " URL:      http://localhost:8888/$SiteSlug"
 Write-Host "========================================`n"
 
 $env:PHPRC = ""
-Set-Location $OriginalLocation
