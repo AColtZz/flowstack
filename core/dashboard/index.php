@@ -81,6 +81,9 @@ $page = $_GET['page'] ?? 'overview';
                 <div class="panel">
                     <h2>Active Websites</h2>
                     <div class="table">
+                        <?php if (empty($websites)): ?>
+                            <p class="notice">There are currently no active websites...</p>
+                        <?php endif; ?>
                         <?php foreach ($websites as $site): ?>
                             <a href="/<?= $site ?>/" class="table__row flex" style="text-decoration:none;">
                                 <span><?= $site ?></span>
