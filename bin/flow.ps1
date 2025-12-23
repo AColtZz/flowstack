@@ -1,21 +1,16 @@
 param([string]$Action)
 
 $StackPort = "8888"
-# AppRoot is the folder where FlowStack is installed (e.g., .../scoop/apps/flowstack/current)
 $AppRoot = Split-Path $PSScriptRoot -Parent
 
-# Dynamic Scoop Path Detection for the Help Menu
 $ScoopRoot = if ($env:SCOOP) { $env:SCOOP } else { "$HOME\scoop" }
 $PersistHtdocs = "$ScoopRoot\persist\flowstack\htdocs"
 
 switch ($Action) {
     "up" {
         Write-Host ">>> FlowStack: Starting Services..." -ForegroundColor Cyan
-
-        # 1. Start MariaDB (Removed the forced --datadir to persist)
         Start-Process mysqld -ArgumentList "--console" -WindowStyle Hidden
 
-        # 2. Start PHP with the Router
         $PhpIni = Join-Path $AppRoot "core\templates\php-stack.ini"
         $Router = Join-Path $AppRoot "core\dashboard\router.php"
         Start-Process php -ArgumentList "-S", "localhost:$StackPort", "-t", "`"$AppRoot\core\dashboard`"", "-c", "`"$PhpIni`"", "`"$Router`"" -WindowStyle Hidden
@@ -26,13 +21,29 @@ switch ($Action) {
 
     "down" {
         Write-Host ">>> FlowStack: Stopping Services..." -ForegroundColor Yellow
-        # Force stop the processes; SilentlyContinue prevents errors if they aren't running
         Stop-Process -Name php, mysqld -Force -ErrorAction SilentlyContinue
         Write-Host ">>> Services Stopped." -ForegroundColor Gray
     }
 
     "new" {
-        # Runs your WordPress site creator helper script
+        # --- NEW: SAFETY CHECK ---
+        $PhpRunning = Get-Process php -ErrorAction SilentlyContinue
+        $MysqlRunning = Get-Process mysqld -ErrorAction SilentlyContinue
+
+        if (!$PhpRunning -or !$MysqlRunning) {
+            Write-Host ">>> Warning: Services are not running!" -ForegroundColor Yellow
+            $Choice = Read-Host "Start FlowStack services now? (y/n)"
+            if ($Choice -eq 'y') {
+                & $PSCommandPath "up"
+                Write-Host ">>> Waiting for services to warm up..." -ForegroundColor Gray
+                Start-Sleep -Seconds 2 # Give MariaDB a moment to initialize
+            } else {
+                Write-Host ">>> Aborting: WP-CLI requires an active MariaDB connection." -ForegroundColor Red
+                return
+            }
+        }
+
+        # Run your WordPress site creator helper script
         & "$PSScriptRoot\helpers\new-site.ps1"
     }
 
@@ -46,8 +57,6 @@ switch ($Action) {
         Write-Host ""
         Write-Host "  Your websites are stored in:" -ForegroundColor White
         Write-Host "  $PersistHtdocs" -ForegroundColor Gray
-        Write-Host ""
-        Write-Host "  Tip: Use 'flowstack up' to get started." -ForegroundColor DarkGray
         Write-Host ""
     }
 }
