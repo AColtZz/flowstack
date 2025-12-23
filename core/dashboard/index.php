@@ -82,7 +82,7 @@ $page = $_GET['page'] ?? 'overview';
                     <h2>Active Websites</h2>
                     <div class="table">
                         <?php foreach ($websites as $site): ?>
-                            <a href="/htdocs/<?= $site ?>/" class="table__row flex" style="text-decoration:none;">
+                            <a href="/<?= $site ?>/" class="table__row flex" style="text-decoration:none;">
                                 <span><?= $site ?></span>
                                 <span class="status status--on-track">Local</span>
                                 <span>Open Project →</span>
