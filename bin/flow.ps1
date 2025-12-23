@@ -47,6 +47,17 @@ switch ($Action) {
         & "$PSScriptRoot\helpers\new-site.ps1"
     }
 
+    "wp" {
+        $PhpIni = Join-Path $AppRoot "core\templates\php-stack.ini"
+        $env:PHPRC = $PhpIni
+
+        # Pass all arguments after 'wp' to the real wp-cli
+        $wpArgs = $args | Select-Object -Skip 1
+        & wp $wpArgs --allow-root
+
+        $env:PHPRC = ""
+    }
+
     Default {
         Write-Host ""
         Write-Host "  FlowStack CLI v1.0.0" -ForegroundColor Cyan
