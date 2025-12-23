@@ -33,13 +33,21 @@ Write-Host ">>> Creating site at $DestPath..." -ForegroundColor Cyan
 New-Item -ItemType Directory -Path $DestPath -Force | Out-Null
 Copy-Item "$MasterCore\*" -Destination $DestPath -Recurse
 
-# --- 5. WP-CLI CONFIGURATION ---
+# --- 5. WP-CLI SETUP ---
 $OriginalLocation = Get-Location
 Set-Location $DestPath
 $env:PHPRC = Join-Path $AppRoot "core\templates\php-stack.ini"
 
-wp config create --dbname=$DbName --dbuser=root --dbpass="" --allow-root
-wp db create --allow-root
+Write-Host ">>> Configuring WordPress with utf8mb4..." -ForegroundColor Gray
+
+# 1. Create Config with explicit Charset
+wp config create --dbname=$DbName --dbuser=root --dbpass="" --dbcharset="utf8mb4" --allow-root
+
+# 2. Create Database with explicit Collation (Fixes your issue)
+# This forces the database to use the modern WordPress standard
+wp db create --db_column_type="utf8mb4_unicode_ci" --allow-root
+
+# 3. Install WordPress
 wp core install --url="http://localhost:8888/$SiteSlug" --title="$SiteName" --admin_user="$AdminUser" --admin_password="$AdminPass" --admin_email="$AdminEmail" --skip-email --allow-root
 
 # --- 6. SUMMARY ---

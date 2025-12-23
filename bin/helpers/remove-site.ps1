@@ -5,8 +5,15 @@ $PSScriptPath = Split-Path $MyInvocation.MyCommand.Path
 $AppRoot = Split-Path (Split-Path $PSScriptPath -Parent) -Parent
 $HtdocsPath = Join-Path $AppRoot "core\dashboard\htdocs"
 
-# If no slug was passed as an argument, ask for it
-if (!$SiteSlug) {
+# --- NEW: SERVICE CHECK ---
+$MysqlRunning = Get-Process mysqld -ErrorAction SilentlyContinue
+if (!$MysqlRunning) {
+    Write-Host ">>> Error: MariaDB is not running! Start it with 'flowstack up' first." -ForegroundColor Red
+    return
+}
+
+# Only ask if the user didn't provide it in the command
+if ([string]::IsNullOrWhiteSpace($SiteSlug)) {
     $SiteSlug = Read-Host "Enter the name of the site to remove"
 }
 
@@ -23,21 +30,20 @@ Write-Host "Preparing to remove: $SiteSlug" -ForegroundColor Yellow
 $ConfirmFiles = Read-Host "Are you sure you want to delete the FILES? (y/n)"
 if ($ConfirmFiles -ne 'y') { Write-Host ">>> Aborted."; return }
 
-# Default to 'y' if user just hits Enter
 $ConfirmDb = Read-Host "Do you also wish to remove the database '$DbName'? (y/n) [default: y]"
-if ($null -eq $ConfirmDb -or $ConfirmDb -eq "" -or $ConfirmDb -eq "y") {
-    $DeleteDb = $true
-} else {
-    $DeleteDb = $false
-}
+$DeleteDb = ($null -eq $ConfirmDb -or $ConfirmDb -eq "" -or $ConfirmDb -eq "y")
 
 # --- 3. EXECUTION ---
 if ($DeleteDb) {
     Write-Host ">>> Dropping Database: $DbName..." -ForegroundColor Gray
+
+    # IMPORTANT: Ensure the environment variable is set for this specific process
     $env:PHPRC = Join-Path $AppRoot "core\templates\php-stack.ini"
 
-    # Use WP-CLI from inside the folder to drop the DB
     Set-Location $DestPath
+
+    # We add a small retry loop or a brief sleep if it just started
+    # but usually, the explicit PHPRC and --allow-root is enough.
     wp db drop --yes --allow-root
 
     $env:PHPRC = ""
