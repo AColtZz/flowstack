@@ -45,7 +45,7 @@ wp config create --dbname=$DbName --dbuser=root --dbpass="" --dbcharset="utf8mb4
 
 # 2. Create Database with explicit Collation (Fixes your issue)
 # This forces the database to use the modern WordPress standard
-wp db create --db_column_type="utf8mb4_unicode_ci" --allow-root
+wp db create --dbcollate="utf8mb4_unicode_ci" --allow-root
 
 # 3. Install WordPress
 wp core install --url="http://localhost:8888/$SiteSlug" --title="$SiteName" --admin_user="$AdminUser" --admin_password="$AdminPass" --admin_email="$AdminEmail" --skip-email --allow-root

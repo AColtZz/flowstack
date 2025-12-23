@@ -14,7 +14,6 @@ switch ($Action) {
         Start-Process php -ArgumentList "-S", "localhost:$StackPort", "-t", "`"$AppRoot\core\dashboard`"", "-c", "`"$PhpIni`"", "`"$Router`"" -WindowStyle Hidden
 
         Write-Host ">>> FlowStack is LIVE at http://localhost:$StackPort" -ForegroundColor Green
-        Start-Process "http://localhost:$StackPort"
     }
 
     "down" {
@@ -28,16 +27,10 @@ switch ($Action) {
         $MysqlRunning = Get-Process mysqld -ErrorAction SilentlyContinue
 
         if (!$PhpRunning -or !$MysqlRunning) {
-            Write-Host ">>> Warning: Services are not running!" -ForegroundColor Yellow
-            $Choice = Read-Host "Start FlowStack services now? (y/n)"
-            if ($Choice -eq 'y') {
-                & $PSCommandPath "up"
-                Write-Host ">>> Waiting for services to warm up..." -ForegroundColor Gray
-                Start-Sleep -Seconds 2
-            } else {
-                Write-Host ">>> Aborting: WP-CLI requires an active MariaDB connection." -ForegroundColor Red
-                return
-            }
+            Write-Host ">>> Services not detected. Starting now..." -ForegroundColor Yellow
+            & $PSCommandPath "up"
+            Write-Host ">>> Waiting for warm-up..." -ForegroundColor Gray
+            Start-Sleep -Seconds 3
         }
         & "$PSScriptRoot\helpers\new-site.ps1"
     }
