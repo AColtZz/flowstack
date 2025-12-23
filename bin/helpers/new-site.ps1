@@ -37,14 +37,15 @@ Copy-Item "$MasterCore\*" -Destination $DestPath -Recurse
 Set-Location $DestPath
 $env:PHPRC = Join-Path $AppRoot "core\templates\php-stack.ini"
 
-Write-Host ">>> Configuring WordPress with utf8mb4..." -ForegroundColor Gray
+Write-Host ">>> Configuring WordPress..." -ForegroundColor Gray
 
-# 1. Create Config with explicit Charset
+# 1. Create Config
 wp config create --dbname=$DbName --dbuser=root --dbpass="" --dbcharset="utf8mb4" --allow-root
 
-# 2. FORCE EXPLICIT COLLATION (This fixes the UCA1400 issue)
-Write-Host ">>> Creating Database with utf8mb4_general_ci..." -ForegroundColor Gray
-wp db query "CREATE DATABASE IF NOT EXISTS \`$DbName\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;" --allow-root
+# 2. CREATE THE DATABASE (Fix: added --no-db)
+Write-Host ">>> Creating Database: $DbName (utf8mb4_general_ci)..." -ForegroundColor Gray
+# --no-db allows us to connect to the server even if the database doesn't exist yet
+wp db query "CREATE DATABASE IF NOT EXISTS \`$DbName\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;" --no-db --allow-root
 
 # 3. Install WordPress
 wp core install --url="http://localhost:8888/$SiteSlug" --title="$SiteName" --admin_user="$AdminUser" --admin_password="$AdminPass" --admin_email="$AdminEmail" --skip-email --allow-root
