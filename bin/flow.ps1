@@ -2,9 +2,7 @@ param([string]$Action)
 
 $StackPort = "8888"
 $AppRoot = Split-Path $PSScriptRoot -Parent
-
-$ScoopRoot = if ($env:SCOOP) { $env:SCOOP } else { "$HOME\scoop" }
-$PersistHtdocs = "$ScoopRoot\persist\flowstack\htdocs"
+$PersistHtdocs = Join-Path $AppRoot "core\dashboard\htdocs"
 
 switch ($Action) {
     "up" {
@@ -47,14 +45,22 @@ switch ($Action) {
     "list" {
         Write-Host ">>> FlowStack: Installed Websites" -ForegroundColor Cyan
         Write-Host "----------------------------------------"
-        $Sites = Get-ChildItem $PersistHtdocs -Directory -ErrorAction SilentlyContinue
-        if (!$Sites) {
-            Write-Host " No sites found." -ForegroundColor Gray
-        } else {
-            foreach ($Site in $Sites) {
-                Write-Host " - $($Site.Name)" -ForegroundColor White
-                Write-Host "   URL: http://localhost:8888/$($Site.Name)" -ForegroundColor Gray
+
+        # Check if the path exists (even if it's a junction)
+        if (Test-Path $PersistHtdocs) {
+            # We look for directories inside the htdocs junction
+            $Sites = Get-ChildItem -Path "$PersistHtdocs\*" -Directory -ErrorAction SilentlyContinue
+
+            if (!$Sites) {
+                Write-Host " No sites found in: $PersistHtdocs" -ForegroundColor Gray
+            } else {
+                foreach ($Site in $Sites) {
+                    Write-Host " - $($Site.Name)" -ForegroundColor White
+                    Write-Host "   URL: http://localhost:8888/$($Site.Name)" -ForegroundColor Gray
+                }
             }
+        } else {
+            Write-Host " Error: Path not found ($PersistHtdocs)" -ForegroundColor Red
         }
         Write-Host "----------------------------------------"
     }
