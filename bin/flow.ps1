@@ -7,11 +7,24 @@ $PersistHtdocs = Join-Path $AppRoot "core\dashboard\htdocs"
 switch ($Action) {
     "up" {
         Write-Host ">>> FlowStack: Starting Services..." -ForegroundColor Cyan
-        Start-Process mysqld -ArgumentList "--console" -WindowStyle Hidden
 
-        $PhpIni = Join-Path $AppRoot "core\templates\php-stack.ini"
-        $Router = Join-Path $AppRoot "core\dashboard\router.php"
-        Start-Process php -ArgumentList "-S", "localhost:$StackPort", "-t", "`"$AppRoot\core\dashboard`"", "-c", "`"$PhpIni`"", "`"$Router`"" -WindowStyle Hidden
+        # Check if already running to prevent double processes
+        if (!(Get-Process mysqld -ErrorAction SilentlyContinue)) {
+            # We pass the character set and collation directly as startup arguments
+            $MariaArgs = @(
+                "--console",
+                "--character-set-server=utf8mb4",
+                "--collation-server=utf8mb4_unicode_ci"
+            )
+            Start-Process mysqld -ArgumentList $MariaArgs -WindowStyle Hidden
+        }
+
+        # Check if already running to prevent double processes
+        if (!(Get-Process php -ErrorAction SilentlyContinue)) {
+            $PhpIni = Join-Path $AppRoot "core\templates\php-stack.ini"
+            $Router = Join-Path $AppRoot "core\dashboard\router.php"
+            Start-Process php -ArgumentList "-S", "localhost:$StackPort", "-t", "`"$AppRoot\core\dashboard`"", "-c", "`"$PhpIni`"", "`"$Router`"" -WindowStyle Hidden
+        }
 
         Write-Host ">>> FlowStack is LIVE at http://localhost:$StackPort" -ForegroundColor Green
     }
@@ -29,8 +42,8 @@ switch ($Action) {
         if (!$PhpRunning -or !$MysqlRunning) {
             Write-Host ">>> Services not detected. Starting now..." -ForegroundColor Yellow
             & $PSCommandPath "up"
-            Write-Host ">>> Waiting for warm-up..." -ForegroundColor Gray
-            Start-Sleep -Seconds 3
+            Write-Host ">>> Waiting for MariaDB to initialize..." -ForegroundColor Gray
+            Start-Sleep -Seconds 4 # 4 seconds is safer for MariaDB to fully boot
         }
         & "$PSScriptRoot\helpers\new-site.ps1"
     }
@@ -65,7 +78,8 @@ switch ($Action) {
     }
 
     "rm" {
-        $SiteName = $args[1]
+        # Inside the 'rm' case, $args[0] is the first word AFTER 'rm'
+        $SiteName = $args[0]
         & "$PSScriptRoot\helpers\remove-site.ps1" $SiteName
     }
 
