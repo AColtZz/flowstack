@@ -42,10 +42,15 @@ Write-Host ">>> Configuring WordPress with utf8mb4..." -ForegroundColor Gray
 # 1. Create Config with explicit Charset
 wp config create --dbname=$DbName --dbuser=root --dbpass="" --dbcharset="utf8mb4" --allow-root
 
-# 2. Create Database
+# 2. Create Database (This might initially use the buggy MariaDB default)
 wp db create --allow-root
 
-# 3. Install WordPress
+# 3. FIX COLLATION (Force the database to general_ci before tables are made)
+Write-Host ">>> Forcing collation to utf8mb4_general_ci..." -ForegroundColor Gray
+wp db query "ALTER DATABASE \`$DbName\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;" --allow-root
+
+# 4. Install WordPress
+# Because the DB is now fixed, all tables created here will be correct.
 wp core install --url="http://localhost:8888/$SiteSlug" --title="$SiteName" --admin_user="$AdminUser" --admin_password="$AdminPass" --admin_email="$AdminEmail" --skip-email --allow-root
 
 # --- 6. SUMMARY ---
