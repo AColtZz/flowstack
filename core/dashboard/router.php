@@ -1,43 +1,67 @@
 <?php
-// Get the requested path
+// Set the physical root to the htdocs folder
+$root = __DIR__ . '/htdocs';
 $path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
-$root = __DIR__;
 
-// 1. If it's the root, serve the dashboard
-if ($path === '/' || $path === '/index.php') {
-    return false; // Let PHP serve index.php naturally
-}
+// 1. Construct the physical path
+$htdocsPath = $root . $path;
 
-// 2. Check if the request is for a file in phpmyadmin
-if (strpos($path, '/phpmyadmin') === 0) {
-    return false;
-}
+// 2. If it's a physical file that exists
+if (file_exists($htdocsPath) && !is_dir($htdocsPath)) {
+    $ext = pathinfo($htdocsPath, PATHINFO_EXTENSION);
 
-// 3. Check if the request is for a site inside htdocs
-// Example: /my-site/index.php -> look in /htdocs/my-site/index.php
-$htdocsPath = $root . '/htdocs' . $path;
-
-if (file_exists($htdocsPath)) {
-    // If it's a directory without a trailing slash, redirect to add it
-    if (is_dir($htdocsPath) && substr($path, -1) !== '/') {
-        header("Location: " . $path . "/");
-        exit;
-    }
-
-    // If it's a directory, look for index.php
-    if (is_dir($htdocsPath)) {
-        $htdocsPath .= '/index.php';
-    }
-
-    // Serve the file
-    if (file_exists($htdocsPath)) {
-        // Standard PHP Built-in server behavior:
-        // Set script name to the actual file for WP and other apps
+    // IF IT IS A PHP FILE: Execute it
+    if ($ext === 'php') {
         $_SERVER['SCRIPT_NAME'] = $path;
-        include_once $htdocsPath;
+        include $htdocsPath;
+        return true;
+    }
+
+    // IF IT IS A STATIC ASSET (JS, CSS, Images): Serve with correct MIME type
+    $mimes = [
+        'js'    => 'application/javascript',
+        'css'   => 'text/css',
+        'png'   => 'image/png',
+        'jpg'   => 'image/jpeg',
+        'jpeg'  => 'image/jpeg',
+        'gif'   => 'image/gif',
+        'svg'   => 'image/svg+xml',
+        'webp'  => 'image/webp',
+        'ico'   => 'image/x-icon',
+        'woff'  => 'font/woff',
+        'woff2' => 'font/woff2',
+        'ttf'   => 'font/ttf',
+        'otf'   => 'font/otf'
+    ];
+
+    if (isset($mimes[$ext])) {
+        header("Content-Type: " . $mimes[$ext]);
+    }
+
+    readfile($htdocsPath);
+    return true;
+}
+
+// 3. Handle Directories (Look for index.php)
+if (is_dir($htdocsPath)) {
+    $indexPath = rtrim($htdocsPath, '/') . '/index.php';
+    if (file_exists($indexPath)) {
+        $_SERVER['SCRIPT_NAME'] = rtrim($path, '/') . '/index.php';
+        include $indexPath;
         return true;
     }
 }
 
-// 4. Otherwise, let the server handle it (404 or dashboard assets)
+// 4. WordPress Permalink Support (The "Fallback")
+// If the file doesn't exist, send it to the WordPress index.php
+if (strpos($path, '/unique-design') === 0) {
+    $wp_index = $root . '/unique-design/index.php';
+    if (file_exists($wp_index)) {
+        $_SERVER['SCRIPT_NAME'] = '/unique-design/index.php';
+        include $wp_index;
+        return true;
+    }
+}
+
+// 5. Default 404
 return false;
